@@ -3,10 +3,10 @@
 
 def my_zip(one, two):
     """func wich do the same as zip()"""
-    less = [len(one) if len(one) < len(two) else len(two)]
+    less = len(min(one, two))
     new_l = []
-    for i in xrange(less[0]):
-        new_l.insert(i, (one[i], two[i]))
+    for i in xrange(less):
+        new_l.append((one[i], two[i]))
     return new_l
 
 

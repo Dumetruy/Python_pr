@@ -3,11 +3,7 @@
 
 def my_zip(one, two):
     """func wich do the same as zip()"""
-    less = len(min(one, two))
-    new_l = []
-    for i in xrange(less):
-        new_l.append((one[i], two[i]))
-    return new_l
+    return [(one[i], two[i]) for i in xrange(len(min(one, two)))]
 
 
 L_1 = [1, 2, 3, 4]

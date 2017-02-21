@@ -1,20 +1,12 @@
 """Function wich imitate work of xrange"""
 
 
-def my_own_xrange(start_, stop_=0, step_=1):
+def my_own_xrange(start, stop=0, step=1):
     '''Check for stop_ param'''
-    if stop_ == 0:
-        count = 0
-        while count < start_:
-            yield count
-            count += step_
-
-    else:
-        count = start_
-        while count < stop_:
-            yield count
-            count += step_
-
+    count = 0 if stop == 0 else start
+    while count < (start if stop == 0 else stop):
+        yield count
+        count += step
 
 L_3 = ['o', 4, 12, 6, 8]
 

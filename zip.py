@@ -3,7 +3,7 @@
 
 def my_zip(*args):
     """func wich do the same as zip()"""
-    return [(tuple(list(j)[i] for j in args)) for i in xrange(min(map(len, args)))]
+    return [tuple(list(j)[i] for j in args) for i in xrange(min(map(len, args)))]
 
 
 L_1 = [1, 2, 3, 4]

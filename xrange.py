@@ -4,7 +4,7 @@
 def my_own_xrange(start, stop=0, step=1):
     '''Check for stop_ param'''
     count = 0 if stop == 0 else start
-    while count < (start if stop == 0 else stop):
+    while count < (stop or start):
         yield count
         count += step
 

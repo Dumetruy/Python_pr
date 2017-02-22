@@ -1,10 +1,12 @@
 '''This func should work like as cat'''
-S = raw_input()
+import sys
+param = sys.argv[1:]
 
-try:
-    my_file = open(S)
-    for line in my_file:
-        print line
-
-except IOError:
-    print 'Sorry we could\'t find your file :' + my_file+'. Try again.'
+def cat_like(param):
+    for x in param:
+        try:
+            with open( x, 'r') as f:
+                print f.read()
+        except IOError:
+            print "Try again"
+cat_like(param)

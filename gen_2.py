@@ -1,4 +1,4 @@
-"""Endless gen with arguments string lenght, number and number of digits"""
+"""Endless gen with arguments: string length, number and number of digits"""
 import random
 import string
 import re
@@ -30,14 +30,14 @@ def gen_validator(str_count, str_len=None, dig_numb=1):
             break
 
 
-def gen_validator_decor():
+def gen_validator_decor(usr_arg):
     """Checking for arguments in gen_validator"""
     try:
-        for _ in gen_validator(7):
+        for _ in gen_validator(usr_arg):
             print _
     except TypeError:
         print 'Try with at least one argument!'
 
 
 if __name__ == "__main__":
-    gen_validator_decor()
+    gen_validator_decor(4)

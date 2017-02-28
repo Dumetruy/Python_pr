@@ -39,9 +39,9 @@ def gen_validator(str_count, str_len=None, dig_numb=1):
                     yield cur_string
                     str_count -= 1
         else:
-            break
+            return
 
 
 if __name__ == "__main__":
-    for i in gen_validator(3, -3, -4):
+    for i in gen_validator(5, 10, 2):
         print i

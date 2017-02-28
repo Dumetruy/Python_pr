@@ -25,11 +25,11 @@ def gen_validator_decorator(func_to_decorate):
 @gen_validator_decorator
 def gen_validator(str_count, str_len=None, dig_numb=1):
     """Validator for endless_random_gen"""
-    if str_len < dig_numb and str_len is not None and str_len >= 0:
-        print "String length should be bigger than number of digits!"
+    if str_len < dig_numb and str_len is not None and str_len >= 0 or dig_numb < 0:
+        print "Please enter a valid arguments!"
         return
     for cur_string in endless_random_gen():
-        if str_count > 0 and dig_numb >= 0:
+        if str_count > 0:
             if len(re.findall(r'\d', cur_string)) == dig_numb:
                 if str_len is not None:
                     if len(cur_string) == str_len:
@@ -43,5 +43,5 @@ def gen_validator(str_count, str_len=None, dig_numb=1):
 
 
 if __name__ == "__main__":
-    for i in gen_validator(5, 10, 2):
+    for i in gen_validator(5):
         print i

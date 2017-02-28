@@ -11,10 +11,22 @@ def endless_random_gen():
         yield ''.join([random.choice(choice_list) for _ in xrange(1, random.randint(1, 80))])
 
 
+def gen_validator_decorator(func_to_decorate):
+    """Decorator"""
+    def wrapper(*args):
+        """This func tries to launch func with some args"""
+        try:
+            return func_to_decorate(*args)
+        except TypeError:
+            print "Please give me at least one argument!"
+    return wrapper
+
+
+@gen_validator_decorator
 def gen_validator(str_count, str_len=None, dig_numb=1):
     """Validator for endless_random_gen"""
     if str_len < dig_numb and str_len is not None:
-        print "asd"
+        print "String length should be bigger than number of digits!"
         return
     for cur_string in endless_random_gen():
         if str_count != 0:
@@ -30,14 +42,6 @@ def gen_validator(str_count, str_len=None, dig_numb=1):
             break
 
 
-def gen_validator_decor(usr_arg):
-    """Checking for arguments in gen_validator"""
-    try:
-        for _ in gen_validator(usr_arg):
-            print _
-    except TypeError:
-        print 'Try with at least one argument!'
-
-
 if __name__ == "__main__":
-    gen_validator_decor(4)
+    for i in gen_validator(4, 5):
+        print i

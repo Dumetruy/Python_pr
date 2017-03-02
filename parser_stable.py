@@ -8,7 +8,7 @@ def main():
     try:
         script_arg = sys.argv[1]
     except IndexError:
-        print "Please enter an argument!"
+        print "Need an argument!"
         return
 
     ip_dict = {}
@@ -26,7 +26,6 @@ def parse_file(dict_adr, dict_sys, log_name):
                 sys_name, addr = parse_string(line)
                 update_dict(dict_adr, addr)
                 update_dict(dict_sys, sys_name)
-            return dict_adr, dict_sys
     except IOError:
         print "Can't open {}".format(log_name)
         exit(1)
@@ -38,7 +37,7 @@ def parse_string(line_from_log):
                'Mac', 'Slurp', 'Semrush', 'Baiduspider', 'bot', 'coccoc']
     ip_name = line_from_log.split()[0]
     sys_str = re.search(r'\((.+?)\)', line_from_log)
-    sys_name = 'Validator'
+    sys_name = 'Unknown'
     if sys_str:
         sys_str = sys_str.group(1)
         for item in os_list:
@@ -50,7 +49,7 @@ def parse_string(line_from_log):
 
 
 def update_dict(up_dict, key):
-    """Func that update specific dict"""
+    """func that update specific dict"""
     if key in up_dict:
         up_dict[key] += 1
     else:
@@ -58,11 +57,11 @@ def update_dict(up_dict, key):
     return up_dict
 
 
-def print_result(res_dict, count):
-    """print results from specific dict"""
+def print_result(res_dict, depth):
+    """print results from specific dict with some depth"""
     sort_dict = sorted(res_dict.items(), key=lambda (k, v): v, reverse=True)
     print 'Top'.center(23, '-')
-    for num, (key, val) in enumerate(sort_dict[:count], start=1):
+    for num, (key, val) in enumerate(sort_dict[:depth], start=1):
         print '{}: {} - {}'.format(num, key, val)
 
 

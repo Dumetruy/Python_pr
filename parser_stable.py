@@ -33,7 +33,7 @@ def parse_file(dict_adr, dict_sys, log_name):
 
 def parse_string(line_from_log):
     """takes ip_addr and OS names/bots from lines"""
-    os_list = ['Win', 'bot', 'Metrika', 'Linux', 'Mac', 'CrOS', 'FreeBSD',
+    os_list = ['Win', 'bot', 'Linux', 'Mac', 'Metrika', 'CrOS', 'FreeBSD',
                'Slurp', 'Semrush', 'Baiduspider', 'coccoc']
     ip_name = line_from_log.split()[0]
     sys_str = re.search(r'\((.+?)\)', line_from_log)
@@ -49,12 +49,14 @@ def parse_string(line_from_log):
 
 
 def garbage_cleaner(garb_str):
-    """clean sting from useless garbage"""
-    for garbage in ['X11;', 'WOW64;', 'MSIE 8.0;', 'MSIE 7.0;', 'compatible;', 'Macintosh;', 'NT', ';', 'x86_64'
-    'MSIE 5.01;', 'MSIE 5.5;', 'MSIE 6.0;', 'MSIE 7.0b;', 'Win64;', ' amd64;', 'bots', '+http://']:
+    """cleans sting from useless garbage"""
+    for garbage in ['X11;', 'WOW64;', 'MSIE 8.0;', 'MSIE 7.0;', 'compatible;',
+                    'Macintosh;', 'NT', ';', 'x86_64', 'MSIE 5.01;', 'MSIE 5.5;',
+                    'MSIE 6.0;', 'MSIE 7.0b;', 'Win64;', ' amd64;', 'bots', '+http://']:
         garb_str = garb_str.replace(garbage, '')
         garb_str = garb_str.replace('Win95', 'Windows')
     return garb_str
+
 
 def update_dict(up_dict, key):
     """func that update specific dict"""

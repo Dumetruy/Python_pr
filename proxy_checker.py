@@ -8,7 +8,7 @@ from requests.exceptions import (ProxyError, ConnectionError, ConnectTimeout,
 
 
 def main():
-    """check file exist, create sets, init other func"""
+    """check file exist, create sets, init other functions"""
     files = sys.argv[1:]
     while not files:
         print 'Please enter filenames blanked by a whitespace.'

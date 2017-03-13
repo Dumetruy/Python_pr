@@ -10,14 +10,10 @@ class SearchService(object):
     """Google searching service class"""
     def __init__(self, usr_input=None):
         """create exemplar for curr req and check input"""
-        if usr_input is not None:
-            self.req_data = usr_input
-        else:
-            search_str = ' '.join(sys.argv[1:]).decode('cp1251').encode('utf8')
-            self.req_data = search_str
-            while not self.req_data:
-                print 'Please enter your request blanked by a whitespace.'
-                self.req_data = raw_input()
+        self.req_data = usr_input or ' '.join(sys.argv[1:]).decode('cp1251').encode('utf8')
+        while not self.req_data:
+            print 'Please enter your request blanked by a whitespace.'
+            self.req_data = raw_input()
 
     def find(self):
         """main method"""

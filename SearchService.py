@@ -67,7 +67,7 @@ class SearchService(object):
 
     @staticmethod
     def garb_cleaner(link):
-        """get valid link from str"""
+        """cleaning links from garb"""
         val_url = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]'
                              r'|(?:%[0-9a-fA-F][0-9a-fA-F]))+')
         link = link.replace('&sa', ' ').replace('25', '')

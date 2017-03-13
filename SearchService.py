@@ -4,6 +4,7 @@
 import sys
 import requests
 from lxml import html
+import urllib
 
 
 class SearchService(object):
@@ -38,15 +39,14 @@ class SearchService(object):
             print 'Sorry, we don\'t find anything!'
         else:
             for link in links_lst[:3]:
-                print self.garbage_cleaner(link)
+                print urllib.unquote(self.garbage_cleaner(link)).decode('utf8')
 
     @staticmethod
     def garbage_cleaner(link):
         """cleaning links from garb"""
-        val_link = link.split('=')[1].replace('&sa', ' ').replace('25', '')
-        return val_link
+        return link.split('=')[1].replace('&sa', ' ').replace('25', '')
 
 
 if __name__ == '__main__':
-    GS = SearchService('Иван Федерович Крузенштерн')
+    GS = SearchService()
     GS.find()

@@ -30,7 +30,7 @@ class SearchService(object):
     def get_links_from_tree(req_data):
         """create tree from request and get links """
         tree = html.fromstring(req_data.text)
-        links = tree.xpath('.//*[@id="ires"]/ol/div/h3/a/@href')
+        links = tree.xpath('.//*[@id="ires"]/ol/div/h3[following-sibling::div[@class="s"]]/a/@href')
         if links:
             return links
         else:
@@ -39,20 +39,14 @@ class SearchService(object):
 
     def get_result(self, links_lst):
         """print request result"""
-        print 'Links for request {}'.format(self.req_data).center(51, '-')
-        ind = 0
-        for link in links_lst:
-            val_link = self.garb_cleaner(link)
-            if ind != 3 and val_link:
-                print val_link
-                ind += 1
+        for link in links_lst[:3]:
+            print self.garbage_cleaner(link)
 
     @staticmethod
-    def garb_cleaner(link):
+    def garbage_cleaner(link):
         """cleaning links from garb"""
-        if 'search' not in link:
-            val_link = link.split('=')[1].replace('&sa', ' ').replace('25', '')
-            return val_link
+        val_link = link.split('=')[1].replace('&sa', ' ').replace('25', '')
+        return val_link
 
 
 if __name__ == '__main__':

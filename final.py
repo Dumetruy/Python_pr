@@ -37,7 +37,7 @@ def get_usr_data():
         validate_date(there_date)
         return dest, depart, there_date, return_date
     except ValueError:
-        print "Incorrect flight information, data should blanked by a whitespace"
+        print "Incorrect flight information, data should blanked by a whitespace: AAA AAA YYYY-MM-DD"
         exit(0)
 
 

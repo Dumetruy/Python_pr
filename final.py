@@ -20,30 +20,27 @@ def main():
 def get_user_data():
     """get user data for flight request"""
     parser = argparse.ArgumentParser(description='Type your data with whitespace in following format')
-    parser.add_argument('depart_iata', type=str, help='AAA')
-    parser.add_argument('dest_iata', type=str, help='AAA')
-    parser.add_argument('depart_date', type=str, help='YYYY-MM-DD')
+    parser.add_argument('depart_iata', type=lambda x: x.upper(), help='AAA')
+    parser.add_argument('dest_iata', type=lambda x: x.upper(), help='AAA')
+    parser.add_argument('depart_date', type=lambda x: datetime.strptime(x, "%Y-%m-%d"), help='YYYY-MM-DD')
     parser.add_argument('return_date', nargs='?', default='', help='YYYY-MM-DD - optional')
     args = parser.parse_args()
-    validate_iata(args.depart_iata, args.dest_iata)
-    validate_date(args.depart_date, args.return_date)
-    return args.depart_iata, args.dest_iata, args.depart_date, args.return_date
+    validate_iata([args.depart_iata, args.dest_iata])
+    validate_date(args.depart_date.date(), args.return_date)
+    return args.depart_iata, args.dest_iata, args.depart_date.date(), args.return_date
 
 
-def validate_iata(*iata_codes):
+def validate_iata(iata_codes):
     """validating IATA code"""
     for code in iata_codes:
-        iata_code = code.upper()
-        if not (iata_code.isalpha() and len(iata_code) == 3):
+        if not (code.isalpha() and len(code) == 3):
             print "Incorrect iata-code format, should be AAA"
             exit(1)
-    return iata_codes
 
 
 def validate_date(depart_date, return_date):
     """validating date"""
     try:
-        depart_date = datetime.strptime(depart_date, "%Y-%m-%d").date()
         today_date = date.today()
         end_date = today_date + timedelta(days=365)
         if today_date >= depart_date or depart_date > end_date:
@@ -167,17 +164,18 @@ def print_results(iata_depart, iata_dest, curr, flights_list):
     flights_list.sort(key=lambda k: k['cost'])
     print 'From: {} To: {}'.format(iata_depart, iata_dest)
     banners_str = 'Depart/Arrive   Duration        Class          Cost'
-    fish_str = '{dep/arv} | {dur} | {class} | {cost}'
+    flight_tempate = '{dep/arv} | {dur} | {class} | {cost} ' + curr
     flight = '#{}'
     for i, item in enumerate(flights_list):
+        print flight.format(i), '\n', banners_str
         if 'flights' in item:
-            there_fly = item['flights'][0]
-            ret_fly = item['flights'][1]
-            print flight.format(i), '\n', banners_str
-            print fish_str.format(**there_fly), curr, '\n', fish_str.format(**ret_fly), curr
+            outbound_flight = item['flights'][0]
+            return_flight = item['flights'][1]
+            print flight_tempate.format(**outbound_flight)
+            print flight_tempate.format(**return_flight)
             print 'Total: {}'.format(item['cost']), curr, '\n'
         else:
-            print flight.format(i), '\n', banners_str, '\n', fish_str.format(**item), curr, '\n'
+            print flight_tempate.format(**item), '\n'
 
 
 if __name__ == "__main__":

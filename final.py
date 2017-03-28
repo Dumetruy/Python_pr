@@ -1,111 +1,132 @@
 # -*- coding: UTF-8 -*-
-"""Taking flying info from flyniki.com and combine round-trip tickets"""
+"""Flight search on flyniki.com"""
 
 import sys
 import itertools
-import datetime
+from datetime import datetime, date, timedelta
+
 from lxml import html
 import requests
 
 
 def main():
     """main func"""
-    dest, dep, outbound, oneway, return_date = get_usr_data()
-    json_resp = post_resp(dep, dest, outbound, return_date, oneway)
-    flights_lst, curr = get_fly_list(json_resp, return_date)
-    get_sorted(flights_lst)
-    print_results(dep, dest, curr, flights_lst)
+    dest, depart, outbound, return_date = get_user_data()
+    json_resp = get_json_data(depart, dest, outbound, return_date)
+    flights_lst, currency = get_fly_list(json_resp, return_date)
+    sort_by_cost(flights_lst)
+    print_results(depart, dest, currency, flights_lst)
 
 
-def get_usr_data():
+def get_user_data():
     """get user data for flight request"""
     try:
-        depart, dest, out_date = sys.argv[1:4]
+        depart_iata, dest_iata, depart_date = sys.argv[1:4]
         try:
             return_date = sys.argv[4]
-            oneway = 0
-            validate_date(return_date)
         except IndexError:
             return_date = ''
-            oneway = 1
-        validate_iata(depart)
-        validate_iata(dest)
-        validate_date(out_date)
-        return dest, depart, out_date, oneway, return_date
+        valid_iata_depart, valid_iata_dest = validate_iata(depart_iata, dest_iata)
+        validate_date(depart_date, return_date)
+        return valid_iata_dest, valid_iata_depart, depart_date, return_date
     except ValueError:
-        print "Incorrect flight information, data should blanked by a whitespace"
+        print "Incorrect flight information, data should blanked by a whitespace: AAA AAA YYYY-MM-DD"
         exit(0)
 
 
-def validate_iata(iata_code):
+def validate_iata(*iata_codes):
     """validating IATA code"""
-    if not (iata_code.isalpha() and len(iata_code) == 3 and iata_code.isupper()):
-        print "Incorrect iata-code format, should be AAA, case-sensitive"
-        exit(0)
+    iata_lst = []
+    for code in iata_codes:
+        iata_code = code.upper()
+        if not (iata_code.isalpha() and len(iata_code) == 3):
+            print "Incorrect iata-code format, should be AAA"
+            exit(0)
+        else:
+            iata_lst.append(iata_code)
+    return iata_lst[0], iata_lst[1]
 
 
-def validate_date(date_str):
+def validate_date(depart_date, return_date=''):
     """validating date"""
     try:
-        datetime.datetime.strptime(date_str, '%Y-%m-%d')
+        datetime.strptime(depart_date, '%Y-%m-%d')
+        depart_date = datetime.strptime(depart_date, "%Y-%m-%d").date()
+        today_date = date.today()
+        end_date = today_date + timedelta(days=365)
+        if today_date >= depart_date or depart_date > end_date:
+            print 'Incorrect date, should be between tomorrow and 365 days ahead'
+            exit(0)
+        if return_date:
+            return_date = datetime.strptime(return_date, "%Y-%m-%d").date()
+            if return_date <= depart_date:
+                print 'The return date must be equal or greater than the date of departure'
+                exit(0)
+            return depart_date, return_date
+        return depart_date
     except ValueError:
         print 'Incorrect data format, should be YYYY-MM-DD'
         exit(0)
 
 
-def post_resp(dep, dest, out, back, onew):
+def get_json_data(dep, dest, depart_date, return_date):
     """getting JSON from post response with flyght details"""
-    para = {'departure': dep,
-            'destination': dest,
-            'outboundDate': out,
-            'returnDate': back,
-            'oneway': onew,
-            'adultCount': '1'}
-    user_id = {
+    oneway = 0 if return_date else 1
+    return_date = (return_date or depart_date)
+    params = {'departure': dep,
+              'destination': dest,
+              'outboundDate': depart_date,
+              'returnDate': return_date,
+              'oneway': oneway,
+              'adultCount': '1'}
+    headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0'
-        }
+    }
     body_data = {'_ajax[templates][]': ['main', 'priceoverview', 'infos', 'flightinfo'],
                  '_ajax[requestParams][departure]': dep,
                  '_ajax[requestParams][destination]': dest,
                  '_ajax[requestParams][returnDeparture]': '',
                  '_ajax[requestParams][returnDestination]': '',
-                 '_ajax[requestParams][outboundDate]': out,
-                 '_ajax[requestParams][returnDate]': back,
+                 '_ajax[requestParams][outboundDate]': depart_date,
+                 '_ajax[requestParams][returnDate]': return_date,
                  '_ajax[requestParams][adultCount]': '1',
                  '_ajax[requestParams][childCount]': '0',
                  '_ajax[requestParams][infantCount]': '0',
                  '_ajax[requestParams][openDateOverview]': '0',
-                 '_ajax[requestParams][oneway]': onew}
+                 '_ajax[requestParams][oneway]': oneway}
 
     session = requests.Session()
-    val_sid = get_sid(session.get('http://www.flyniki.com/ru/booking/flight/vacancy.php',
-                                  params=para, headers=user_id))
+    session.headers.update(headers)
+    sid = get_sid(session, params)
     return session.post('http://www.flyniki.com/ru/booking/flight/vacancy.php',
-                        params={'sid': val_sid}, data=body_data).json()
+                        params={'sid': sid}, data=body_data).json()
 
 
-def get_sid(req_url):
+def get_sid(session, params):
     """get valid sid from get request"""
-    return req_url.url.replace('=', ' ').split()[1].encode('utf8')
+    request = session.get('http://www.flyniki.com/ru/booking/flight/vacancy.php',
+                          params=params)
+    return request.url.split('=')[1].encode('utf8')
 
 
 def get_fly_list(json_data, return_date):
     """getting the list of flight infos and the currency"""
     try:
-        tree = html.fromstring(json_data[u'templates'][u'main'])
-        outbound_lst = get_data(get_table(tree, 'outbound'))
-        curr = get_currency(tree).encode('utf8')
+        tree = html.fromstring(json_data['templates']['main'])
+        outbound_flights = get_data(get_flights_trs(tree, 'outbound'))
+        curr = get_currency(tree).strip()
         if return_date:
-            return get_product(outbound_lst, get_data(get_table(tree, 'return'))), curr
+            return_flights = get_data(get_flights_trs(tree, 'return'))
+            return get_flights_variants(outbound_flights, return_flights), curr
         else:
-            return outbound_lst, curr
-    except (IndexError, KeyError):
+            return outbound_flights, curr
+    except KeyError:
         print "There's now flight with this data, please try with another one!"
         exit(0)
 
 
-def get_table(tree, flight_table):
-    """get specific outbound/return flight table"""
+def get_flights_trs(tree, flight_table):
+    """get specific outbound/return flight table rows"""
     return tree.xpath('.//*[@class="{} block"]//tr[attribute::role]'.format(flight_table))
 
 
@@ -113,69 +134,66 @@ def get_data(tree_elem):
     """get information from flight table"""
     fly_lst = []
     for element in tree_elem:
-        dur, dep_ar = get_dur_dep(element)
         for elem in element.xpath('td/label/div[1]/span'):
             fly_dict = dict()
-            fly_dict['D/A'] = dep_ar
-            fly_dict['Dur'] = dur
-            fly_dict['Cls'] = ' '.join(elem.xpath('@title')[0].replace(':', '').split(' ')[7:9])
-            fly_dict['Cst'] = float_val(elem.xpath('text()')[0])
+            fly_info_lst = [item.strip()for item in elem.xpath('@title')[0].split(',')]
+            class_cost_lst = fly_info_lst[3].split(':')
+            fly_dict['dep/arv'] = fly_info_lst[1]
+            fly_dict['dur'] = fly_info_lst[2]
+            fly_dict['class'] = class_cost_lst[0]
+            fly_dict['cost'] = get_price(class_cost_lst[1])
             fly_lst.append(fly_dict)
     return fly_lst
 
 
-def get_dur_dep(tree_elem):
-    """get duration and dep/arr information"""
-    duration = tree_elem.xpath('td[4]/span/text()')[0].replace(' ', '')
-    dep = str(tree_elem.xpath('string(td[2]/span)').replace(' ', '').replace(u'\u2013', '-'))
-    return duration, dep
-
-
-def float_val(str_val):
+def get_price(str_val):
     """convert cost value from str to float"""
     return float(str_val.replace('.', '').replace(',', '.'))
 
 
-def get_product(dict_there, dict_back):
+def get_flights_variants(outbound_fl_dict, return_fl_dict):
     """combine round-trip tickets by flight class"""
-    product_tuple = itertools.product(dict_there, dict_back)
+    product_tuple = itertools.product(outbound_fl_dict, return_fl_dict)
     variant_list = []
     for variant in product_tuple:
-        count_sum = variant[0]['Cst'] + variant[1]['Cst']
-        variant_list.append((variant, count_sum))
+        total_sum = variant[0]['cost'] + variant[1]['cost']
+        variant_list.append({'flights': variant, 'cost': total_sum})
     return variant_list
 
 
 def get_currency(tree):
     """get currency of current request"""
-    return tree.xpath('.//*[@class="outbound block"]//th[attribute::id]'
-                      '[1]/text()')[0].replace(' ', '')
+    try:
+        return tree.xpath('.//*[@class="outbound block"]//th[attribute::id][1]/text()')[0].encode('utf8')
+    except (IndexError, AttributeError):
+        print "There's now flights with this data, please try with another one!"
+        exit(0)
 
 
-def get_sorted(unsorted_item):
+def sort_by_cost(unsorted_item):
     """sorting flight list"""
-    if isinstance(unsorted_item[0], dict):
-        unsorted_item.sort(key=lambda k: k['Cst'])
-    else:
-        unsorted_item.sort(key=lambda (k, v): v)
+    unsorted_item.sort(key=lambda k: k['cost'])
 
 
-def print_results(dep, dest, curr, sort_lst):
+def print_results(iata_depart, iata_dest, curr, sorted_flights):
     """printing results"""
-    print 'From: {} To: {} Currency:{}\n'.format(dep, dest, curr).center(40, ' ')
-    for idx, item in enumerate(sort_lst):
-        print 'Flight #{}'.format(idx).center(35, ' ')
-        try:
-            print '{} - Depp/Arr - {}'.format(item[0][0]['D/A'], item[0][1]['D/A']).center(40, ' ')
-            print '{} - Duration - {}'.format(item[0][0]['Dur'], item[0][1]['Dur']).center(40, ' ')
-            print '{} - Cost - {}'.format(item[0][0]['Cst'], item[0][1]['Cst']).center(40, ' ')
-            print '{} - Class - {}'.format(item[0][0]['Cls'], item[0][1]['Cls']).center(40, ' ')
-            print 'Total: {}\n'.format(item[1]).center(40, ' ')
-        except KeyError:
-            print 'Depp/Arr - {}'.format(item['D/A'])
-            print 'Duration - {}'.format(item['Dur'])
-            print 'Cost - {}'.format(item['Cst'])
-            print 'Class - {}\n'.format(item['Cls'])
+    print 'From: {} To: {}'.format(iata_depart, iata_dest)
+    banners_str = 'Depart/Arrive   Duration        Class          Cost'
+    fish_str = '{dep/arv} | {dur} | {class} | {cost}'
+    flight = '#{}'
+    for i, item in enumerate(sorted_flights):
+        if 'flights' in item:
+            there_fly = item['flights'][0]
+            ret_fly = item['flights'][1]
+            print flight.format(i)
+            print banners_str
+            print fish_str.format(**there_fly), curr
+            print fish_str.format(**ret_fly), curr
+            print 'Total: {}'.format(item['cost']), curr, '\n'
+        else:
+            print flight.format(i)
+            print banners_str
+            print fish_str.format(**item), curr, '\n'
 
 
 if __name__ == "__main__":

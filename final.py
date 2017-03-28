@@ -18,12 +18,12 @@ def main():
     print_results(depart, dest, currency, flights_lst)
 
 
-def get_user_data():
+def get_user_data(user_data=()):
     """get user data for flight request"""
     try:
-        depart_iata, dest_iata, depart_date = sys.argv[1:4]
+        depart_iata, dest_iata, depart_date = user_data[:3] or sys.argv[1:4]
         try:
-            return_date = sys.argv[4]
+            return_date = user_data[3] or sys.argv[4]
         except IndexError:
             return_date = ''
         valid_iata_depart, valid_iata_dest = validate_iata(depart_iata, dest_iata)
@@ -31,7 +31,8 @@ def get_user_data():
         return valid_iata_dest, valid_iata_depart, depart_date, return_date
     except ValueError:
         print "Incorrect flight information, data should blanked by a whitespace: AAA AAA YYYY-MM-DD"
-        exit(0)
+        user_data = raw_input().split(' ')
+        return get_user_data(user_data)
 
 
 def validate_iata(*iata_codes):
@@ -185,15 +186,11 @@ def print_results(iata_depart, iata_dest, curr, sorted_flights):
         if 'flights' in item:
             there_fly = item['flights'][0]
             ret_fly = item['flights'][1]
-            print flight.format(i)
-            print banners_str
-            print fish_str.format(**there_fly), curr
-            print fish_str.format(**ret_fly), curr
+            print flight.format(i), '\n', banners_str
+            print fish_str.format(**there_fly), curr, '\n', fish_str.format(**ret_fly), curr
             print 'Total: {}'.format(item['cost']), curr, '\n'
         else:
-            print flight.format(i)
-            print banners_str
-            print fish_str.format(**item), curr, '\n'
+            print flight.format(i), '\n', banners_str, '\n', fish_str.format(**item), curr, '\n'
 
 
 if __name__ == "__main__":

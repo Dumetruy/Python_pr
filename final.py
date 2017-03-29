@@ -14,7 +14,7 @@ def main():
     depart, dest, outbound, return_date = get_user_data()
     json_resp = get_json_data(depart, dest, outbound, return_date)
     flights_lst, currency = get_fly_list(json_resp, return_date)
-    print_results(depart, dest, currency, flights_lst)
+    print_results(depart, dest, currency, flights_lst, outbound, return_date)
 
 
 def get_user_data():
@@ -25,12 +25,12 @@ def get_user_data():
     parser.add_argument('depart_date', type=lambda x: datetime.strptime(x, "%Y-%m-%d"), help='YYYY-MM-DD')
     parser.add_argument('return_date', nargs='?', default='', help='YYYY-MM-DD - optional')
     args = parser.parse_args()
-    validate_iata([args.depart_iata, args.dest_iata])
+    validate_iata(args.depart_iata, args.dest_iata)
     validate_date(args.depart_date.date(), args.return_date)
     return args.depart_iata, args.dest_iata, args.depart_date.date(), args.return_date
 
 
-def validate_iata(iata_codes):
+def validate_iata(*iata_codes):
     """validating IATA code"""
     for code in iata_codes:
         if not (code.isalpha() and len(code) == 3):
@@ -40,21 +40,21 @@ def validate_iata(iata_codes):
 
 def validate_date(depart_date, return_date):
     """validating date"""
-    try:
-        today_date = date.today()
-        end_date = today_date + timedelta(days=365)
-        if today_date >= depart_date or depart_date > end_date:
-            print 'Incorrect date, should be between tomorrow and 365 days ahead'
-            exit(1)
-        if return_date:
+    today_date = date.today()
+    end_date = today_date + timedelta(days=365)
+    if return_date:
+        try:
             return_date = datetime.strptime(return_date, "%Y-%m-%d").date()
-            if return_date <= depart_date:
+            if return_date < depart_date:
                 print 'The return date must be equal or greater than the date of departure'
                 exit(1)
-            return depart_date, return_date
-        return depart_date
-    except ValueError:
-        print 'Incorrect data format, should be YYYY-MM-DD'
+        except ValueError:
+            print 'Incorrect date format, should be YYYY-MM-DD'
+            exit(1)
+    else:
+        return_date = depart_date
+    if today_date >= depart_date or depart_date > end_date or return_date > end_date:
+        print 'Incorrect date, should be between tomorrow and 365 days ahead'
         exit(1)
 
 
@@ -86,26 +86,24 @@ def get_json_data(dep, dest, depart_date, return_date):
 
     session = requests.Session()
     session.headers.update(headers)
-    sid = get_sid(session, params)
-    return session.post('http://www.flyniki.com/ru/booking/flight/vacancy.php',
-                        params={'sid': sid}, data=body_data).json()
+    url_with_sid = get_sid(session, params)
+    return session.post(url_with_sid, data=body_data).json()
 
 
 def get_sid(session, params):
     """get valid sid from get request"""
-    request = session.get('http://www.flyniki.com/ru/booking/flight/vacancy.php',
-                          params=params)
-    return request.url.split('=')[1].encode('utf8')
+    return session.get('http://www.flyniki.com/ru/booking/flight/vacancy.php',
+                       params=params).url
 
 
 def get_fly_list(json_data, return_date):
     """getting the list of flight infos and the currency"""
     try:
         tree = html.fromstring(json_data['templates']['main'])
-        outbound_flights = get_data(get_flights_trs(tree, 'outbound'))
-        curr = get_currency(tree).strip()
+        outbound_flights = get_data(get_flights_rows(tree, 'outbound'))
+        curr = get_currency(tree)
         if return_date:
-            return_flights = get_data(get_flights_trs(tree, 'return'))
+            return_flights = get_data(get_flights_rows(tree, 'return'))
             return get_flights_variants(outbound_flights, return_flights), curr
         else:
             return outbound_flights, curr
@@ -114,7 +112,7 @@ def get_fly_list(json_data, return_date):
         exit(1)
 
 
-def get_flights_trs(tree, flight_table):
+def get_flights_rows(tree, flight_table):
     """get specific outbound/return flight table rows"""
     return tree.xpath('.//*[@class="{} block"]//tr[attribute::role]'.format(flight_table))
 
@@ -153,16 +151,16 @@ def get_flights_variants(outbound_fl_dict, return_fl_dict):
 def get_currency(tree):
     """get currency of current request"""
     try:
-        return tree.xpath('.//*[@class="outbound block"]//th[attribute::id][1]/text()')[0].encode('utf8')
+        return tree.xpath('.//*[@class="outbound block"]//th[attribute::id][1]/text()')[0].encode('utf8').strip()
     except (IndexError, AttributeError):
         print "There's now flights with this data, please try with another one!"
         exit(1)
 
 
-def print_results(iata_depart, iata_dest, curr, flights_list):
+def print_results(iata_depart, iata_dest, curr, flights_list, *dates):
     """printing results"""
     flights_list.sort(key=lambda k: k['cost'])
-    print 'From: {} To: {}'.format(iata_depart, iata_dest)
+    print 'From: {} {} To: {} {}'.format(iata_depart, dates[0], iata_dest, dates[1])
     banners_str = 'Depart/Arrive   Duration        Class          Cost'
     flight_tempate = '{dep/arv} | {dur} | {class} | {cost} ' + curr
     flight = '#{}'

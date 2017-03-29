@@ -161,18 +161,18 @@ def print_results(iata_depart, iata_dest, curr, flights_list, *dates):
     flights_list.sort(key=lambda k: k['cost'])
     print 'From: {} {} To: {} {}'.format(iata_depart, dates[0], iata_dest, dates[1])
     banners_str = 'Depart/Arrive   Duration        Class          Cost'
-    flight_tempate = '{dep/arv} | {dur} | {class} | {cost} ' + curr
+    flight_template = '{dep/arv} | {dur} | {class} | {cost} ' + curr
     flight = '#{}'
     for i, item in enumerate(flights_list):
         print flight.format(i), '\n', banners_str
         if 'flights' in item:
             outbound_flight = item['flights'][0]
             return_flight = item['flights'][1]
-            print flight_tempate.format(**outbound_flight)
-            print flight_tempate.format(**return_flight)
+            print flight_template.format(**outbound_flight)
+            print flight_template.format(**return_flight)
             print 'Total: {}'.format(item['cost']), curr, '\n'
         else:
-            print flight_tempate.format(**item), '\n'
+            print flight_template.format(**item), '\n'
 
 
 if __name__ == "__main__":

@@ -41,27 +41,26 @@ def validate_iata(*iata_codes):
 def validate_date(depart_date, return_date):
     """validating date"""
     today_date = date.today()
+    tomorrow_date = today_date + timedelta(days=1)
     end_date = today_date + timedelta(days=365)
     if return_date:
         try:
             return_date = datetime.strptime(return_date, "%Y-%m-%d").date()
-            if return_date < depart_date:
-                print 'The return date must be equal or greater than the date of departure'
+            min_return_date = depart_date + timedelta(days=1)
+            if return_date <= depart_date or return_date > end_date:
+                print 'Incorrect return date, should be between {} and {}'.format(min_return_date, end_date)
                 exit(1)
         except ValueError:
             print 'Incorrect date format, should be YYYY-MM-DD'
             exit(1)
-    else:
-        return_date = depart_date
-    if today_date >= depart_date or depart_date > end_date or return_date > end_date:
-        print 'Incorrect date, should be between tomorrow and 365 days ahead'
+    if today_date >= depart_date or depart_date > end_date:
+        print 'Incorrect departure date, should be between {} and {}'.format(tomorrow_date, end_date)
         exit(1)
 
 
 def get_json_data(dep, dest, depart_date, return_date):
     """getting JSON from post response with flyght details"""
     oneway = 0 if return_date else 1
-    return_date = (return_date or depart_date)
     params = {'departure': dep,
               'destination': dest,
               'outboundDate': depart_date,
@@ -108,7 +107,7 @@ def get_fly_list(json_data, return_date):
         else:
             return outbound_flights, curr
     except KeyError:
-        print "There's no flight with this data, please try with another one!"
+        print "There's no flights with this data, please try with another one!"
         exit(1)
 
 
@@ -153,7 +152,7 @@ def get_currency(tree):
     try:
         return tree.xpath('.//*[@class="outbound block"]//th[attribute::id][1]/text()')[0].encode('utf8').strip()
     except (IndexError, AttributeError):
-        print "There's now flights with this data, please try with another one!"
+        print "There's no flights with this data, please try with another one!"
         exit(1)
 
 
